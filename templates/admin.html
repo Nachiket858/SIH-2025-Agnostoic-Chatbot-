@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Upload Document</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        input[type="file"] { margin-bottom: 20px; }
+        #status { margin-top: 20px; font-weight: bold; }
+        button { padding: 8px 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Upload Document to Qdrant</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" accept=".pdf,.docx,.txt" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="status"></div>
+
+    <script>
+        const form = document.getElementById("uploadForm");
+        const statusDiv = document.getElementById("status");
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            statusDiv.innerText = "Uploading...";
+
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            if (!file) {
+                statusDiv.innerText = "Please select a file!";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch("/admin", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                statusDiv.innerText = data.message || "Unknown response";
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "Error uploading file.";
+            }
+        };
+    </script>
+</body>
+</html>
