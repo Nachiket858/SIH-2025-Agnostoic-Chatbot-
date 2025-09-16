@@ -1,53 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin - Upload Document</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        input[type="file"] { margin-bottom: 20px; }
-        #status { margin-top: 20px; font-weight: bold; }
-        button { padding: 8px 16px; cursor: pointer; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin | College Query Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <h2>Upload Document to Qdrant</h2>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" id="fileInput" accept=".pdf,.docx,.txt" required>
-        <button type="submit">Upload</button>
-    </form>
-    <div id="status"></div>
+<body class="bg-gray-50">
+  <header class="bg-indigo-600 text-white">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-user-shield text-2xl"></i>
+        <h1 class="font-bold">Admin Panel</h1>
+      </div>
+      <a href="/" class="bg-indigo-700 px-3 py-2 rounded">Home</a>
+    </div>
+  </header>
 
-    <script>
-        const form = document.getElementById("uploadForm");
-        const statusDiv = document.getElementById("status");
+  <main class="container mx-auto p-6">
+    <div class="max-w-2xl bg-white rounded-lg shadow p-6 mx-auto">
+      <h2 class="text-xl font-semibold mb-3"><i class="fas fa-upload text-indigo-500 mr-2"></i> Upload Knowledge Base</h2>
+      <p class="text-sm text-gray-500 mb-4">Upload PDF / DOCX / TXT files to add to the knowledge base used by the chatbot.</p>
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            statusDiv.innerText = "Uploading...";
+      <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
+        <input type="file" name="file" accept=".pdf,.docx,.txt"
+               class="block w-full border rounded p-2" required />
+        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded">Upload</button>
+      </form>
 
-            const fileInput = document.getElementById("fileInput");
-            const file = fileInput.files[0];
-            if (!file) {
-                statusDiv.innerText = "Please select a file!";
-                return;
-            }
+      <div id="status" class="mt-4 text-sm hidden p-3 rounded"></div>
+    </div>
+  </main>
 
-            const formData = new FormData();
-            formData.append("file", file);
+  <script>
+    const form = document.getElementById('uploadForm');
+    const status = document.getElementById('status');
 
-            try {
-                const response = await fetch("/admin", {
-                    method: "POST",
-                    body: formData
-                });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.classList.remove('hidden');
+      status.textContent = "Uploading...";
 
-                const data = await response.json();
-                statusDiv.innerText = data.message || "Unknown response";
-            } catch (err) {
-                console.error(err);
-                statusDiv.innerText = "Error uploading file.";
-            }
-        };
-    </script>
+      const data = new FormData(e.target);
+      try {
+        const res = await fetch('/admin', { method: 'POST', body: data });
+        const json = await res.json();
+        if (json.status === 'success') {
+          status.className = 'mt-4 text-sm p-3 rounded bg-green-100 text-green-800';
+          status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${json.message}`;
+        } else {
+          status.className = 'mt-4 text-sm p-3 rounded bg-red-100 text-red-800';
+          status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>${json.message}`;
+        }
+      } catch (err) {
+        console.error(err);
+        status.className = 'mt-4 text-sm p-3 rounded bg-red-100 text-red-800';
+        status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Upload failed.`;
+      }
+    });
+  </script>
 </body>
 </html>
