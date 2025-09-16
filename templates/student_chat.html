@@ -93,8 +93,8 @@
 
    
         <div class="border-t border-gray-200 p-4 bg-white">
-          <form method="POST" class="flex space-x-2">
-            <input type="text" name="user_input" placeholder="Type your question about college..." required
+          <form onsubmit="sendMessage(event)" class="flex space-x-2">
+            <input type="text" id="user_input" placeholder="Type your question about college..." required
                    class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             <button type="submit" class="bg-indigo-600 text-white rounded-lg px-5 py-3 hover:bg-indigo-700 flex items-center">
               <i class="fas fa-paper-plane mr-2"></i> Send
@@ -128,6 +128,61 @@
         document.querySelector('input[name="user_input"]').value = q;
       });
     });
+
+    // AJAX form submission
+    async function sendMessage(event) {
+      event.preventDefault();
+      const input = document.getElementById('user_input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      // Append user message to chat box
+      const chatBox = document.getElementById('chat-box').querySelector('div.space-y-4');
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.className = 'message-animation flex justify-end';
+      userMsgDiv.innerHTML = `
+        <div class="message-user bg-indigo-500 text-white max-w-[80%] p-4 shadow-sm">
+          <p>${message}</p>
+        </div>
+      `;
+      chatBox.appendChild(userMsgDiv);
+      scrollToBottom();
+
+      // Clear input
+      input.value = '';
+
+      try {
+        const response = await fetch('/student_chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_input: message }),
+        });
+        if (!response.ok) {
+          console.error('Failed to send message');
+          return;
+        }
+        const data = await response.json();
+        if (data.assistant) {
+          const assistantMsgDiv = document.createElement('div');
+          assistantMsgDiv.className = 'message-animation flex justify-start';
+          assistantMsgDiv.innerHTML = `
+            <div class="message-assistant bg-white border border-gray-200 max-w-[80%] p-4 shadow-sm">
+              <div class="flex items-center mb-1">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-2">
+                  <i class="fas fa-robot text-indigo-500"></i>
+                </div>
+                <span class="font-medium text-gray-700">College Assistant</span>
+              </div>
+              <p class="text-gray-700">${data.assistant}</p>
+            </div>
+          `;
+          chatBox.appendChild(assistantMsgDiv);
+          scrollToBottom();
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    }
   </script>
 </body>
 </html>

@@ -17,31 +17,65 @@ def student_chat():
         session["messages_history"] = []
 
     if request.method == "POST":
-        user_input = request.form.get("user_input", "").strip()
-        if user_input:
-            # Store user message in session for UI rendering
-            session["messages_history"].append({"role": "user", "content": user_input})
+        if request.is_json:
+            # Handle AJAX request
+            data = request.get_json()
+            user_input = data.get("user_input", "").strip()
+            if user_input:
+                # Store user message in session for UI rendering
+                session["messages_history"].append({"role": "user", "content": user_input})
 
-            # Invoke the LangGraph chatbot, passing thread_id so conversation history is preserved
-            config = {"configurable": {"thread_id": session["thread_id"]}}
-            # We pass the message as a HumanMessage (same pattern as your original working code)
-            response = chatbot.invoke({"messages": [HumanMessage(content=user_input)]}, config=config)
+                # Invoke the LangGraph chatbot, passing thread_id so conversation history is preserved
+                config = {"configurable": {"thread_id": session["thread_id"]}}
+                # We pass the message as a HumanMessage (same pattern as your original working code)
+                response = chatbot.invoke({"messages": [HumanMessage(content=user_input)]}, config=config)
 
-            # LangGraph compiled chatbot returns a dict with "messages": [<BaseMessage>...]
-            # Guard: extract assistant text safely
-            assistant_text = ""
-            try:
-                # expected form: response["messages"][-1].content
-                assistant_text = response["messages"][-1].content
-            except Exception:
-                # Fallback if response shape differs
-                assistant = response if isinstance(response, str) else None
-                if isinstance(assistant, str):
-                    assistant_text = assistant
-                else:
-                    assistant_text = "Sorry, I couldn't generate a reply."
+                # LangGraph compiled chatbot returns a dict with "messages": [<BaseMessage>...]
+                # Guard: extract assistant text safely
+                assistant_text = ""
+                try:
+                    # expected form: response["messages"][-1].content
+                    assistant_text = response["messages"][-1].content
+                except Exception:
+                    # Fallback if response shape differs
+                    assistant = response if isinstance(response, str) else None
+                    if isinstance(assistant, str):
+                        assistant_text = assistant
+                    else:
+                        assistant_text = "Sorry, I couldn't generate a reply."
 
-            session["messages_history"].append({"role": "assistant", "content": assistant_text})
+                session["messages_history"].append({"role": "assistant", "content": assistant_text})
+
+                return {"assistant": assistant_text}
+            else:
+                return {"error": "No user input provided"}, 400
+        else:
+            # Handle form submission (fallback, though we'll use AJAX)
+            user_input = request.form.get("user_input", "").strip()
+            if user_input:
+                # Store user message in session for UI rendering
+                session["messages_history"].append({"role": "user", "content": user_input})
+
+                # Invoke the LangGraph chatbot, passing thread_id so conversation history is preserved
+                config = {"configurable": {"thread_id": session["thread_id"]}}
+                # We pass the message as a HumanMessage (same pattern as your original working code)
+                response = chatbot.invoke({"messages": [HumanMessage(content=user_input)]}, config=config)
+
+                # LangGraph compiled chatbot returns a dict with "messages": [<BaseMessage>...]
+                # Guard: extract assistant text safely
+                assistant_text = ""
+                try:
+                    # expected form: response["messages"][-1].content
+                    assistant_text = response["messages"][-1].content
+                except Exception:
+                    # Fallback if response shape differs
+                    assistant = response if isinstance(response, str) else None
+                    if isinstance(assistant, str):
+                        assistant_text = assistant
+                    else:
+                        assistant_text = "Sorry, I couldn't generate a reply."
+
+                session["messages_history"].append({"role": "assistant", "content": assistant_text})
 
     threads = retrive_all_threads()
     return render_template("student_chat.html",
