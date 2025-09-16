@@ -31,8 +31,8 @@ def student_chat():
             # Guard: extract assistant text safely
             assistant_text = ""
             try:
-                # expected form: response["messages"][0].content
-                assistant_text = response["messages"][0].content
+                # expected form: response["messages"][-1].content
+                assistant_text = response["messages"][-1].content
             except Exception:
                 # Fallback if response shape differs
                 assistant = response if isinstance(response, str) else None

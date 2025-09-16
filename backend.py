@@ -50,21 +50,18 @@ def chat_node(state: ChatState) -> ChatState:
 
     context_text = "\n\n".join(context_chunks) if context_chunks else "No relevant context found."
 
-    augmented_prompt = f"""
-You are a helpful assistant. Use the following context to answer the question.
+    from langchain_core.messages import SystemMessage
 
-Context:
-{context_text}
+    # Build messages list for model: system message with context + all previous messages
+    system_message = SystemMessage(content=f"You are a helpful assistant. Use the following context to answer the question.\n\nContext:\n{context_text}\n\nIf context is not enough, respond accordingly.")
 
-Question:
-{last_msg}
-
-If context is not enough, respond accordingly.
-"""
+    # Pass all previous messages (including user and assistant) to the model
+    # messages is a list of BaseMessage, so we can pass as is after prepending system_message
+    model_messages = [system_message] + messages
 
     # Call the underlying generative model
     try:
-        assistant_message = model.invoke([HumanMessage(content=augmented_prompt)])
+        assistant_message = model.invoke(model_messages)
     except Exception as e:
         print("Model invocation failed:", e)
         traceback.print_exc()
