@@ -6,6 +6,8 @@ from utilities import generate_thread_id, add_thread
 
 student_bp = Blueprint("student", __name__, template_folder="templates")
 
+from flask import Response, stream_with_context
+
 @student_bp.route("/student_chat", methods=["GET", "POST"])
 def student_chat():
     # Ensure thread/session initialization
@@ -25,28 +27,20 @@ def student_chat():
                 # Store user message in session for UI rendering
                 session["messages_history"].append({"role": "user", "content": user_input})
 
-                # Invoke the LangGraph chatbot, passing thread_id so conversation history is preserved
-                config = {"configurable": {"thread_id": session["thread_id"]}}
-                # We pass the message as a HumanMessage (same pattern as your original working code)
-                response = chatbot.invoke({"messages": [HumanMessage(content=user_input)]}, config=config)
+                # Streaming response generator
+                def generate():
+                    config = {"configurable": {"thread_id": session["thread_id"]}}
+                    try:
+                        for message_chunk, metadata in chatbot.stream(
+                            {"messages": [HumanMessage(content=user_input)]},
+                            config=config,
+                            stream_mode="messages"
+                        ):
+                            yield f"data: {message_chunk.content}\n\n"
+                    except Exception:
+                        yield "data: Sorry, an error occurred while generating the response.\n\n"
 
-                # LangGraph compiled chatbot returns a dict with "messages": [<BaseMessage>...]
-                # Guard: extract assistant text safely
-                assistant_text = ""
-                try:
-                    # expected form: response["messages"][-1].content
-                    assistant_text = response["messages"][-1].content
-                except Exception:
-                    # Fallback if response shape differs
-                    assistant = response if isinstance(response, str) else None
-                    if isinstance(assistant, str):
-                        assistant_text = assistant
-                    else:
-                        assistant_text = "Sorry, I couldn't generate a reply."
-
-                session["messages_history"].append({"role": "assistant", "content": assistant_text})
-
-                return {"assistant": assistant_text}
+                return Response(stream_with_context(generate()), mimetype="text/event-stream")
             else:
                 return {"error": "No user input provided"}, 400
         else:
@@ -56,19 +50,13 @@ def student_chat():
                 # Store user message in session for UI rendering
                 session["messages_history"].append({"role": "user", "content": user_input})
 
-                # Invoke the LangGraph chatbot, passing thread_id so conversation history is preserved
                 config = {"configurable": {"thread_id": session["thread_id"]}}
-                # We pass the message as a HumanMessage (same pattern as your original working code)
                 response = chatbot.invoke({"messages": [HumanMessage(content=user_input)]}, config=config)
 
-                # LangGraph compiled chatbot returns a dict with "messages": [<BaseMessage>...]
-                # Guard: extract assistant text safely
                 assistant_text = ""
                 try:
-                    # expected form: response["messages"][-1].content
                     assistant_text = response["messages"][-1].content
                 except Exception:
-                    # Fallback if response shape differs
                     assistant = response if isinstance(response, str) else None
                     if isinstance(assistant, str):
                         assistant_text = assistant
@@ -77,11 +65,29 @@ def student_chat():
 
                 session["messages_history"].append({"role": "assistant", "content": assistant_text})
 
-    threads = retrive_all_threads()
+    # Enhanced threads with names and sorting
+    raw_threads = retrive_all_threads()
+    enhanced_threads = []
+    for th in raw_threads:
+        messages = load_con(th)
+        # Find first user message as thread name
+        thread_name = None
+        for msg in messages:
+            if msg.get("role") == "user" and msg.get("content"):
+                thread_name = msg.get("content")
+                break
+        if not thread_name:
+            thread_name = f"Thread {raw_threads.index(th) + 1}"
+        enhanced_threads.append({"id": th, "name": thread_name})
+
+    # Sort threads so current thread is on top
+    current_thread = session.get("thread_id")
+    enhanced_threads.sort(key=lambda x: 0 if x["id"] == current_thread else 1)
+
     return render_template("student_chat.html",
                            messages=session.get("messages_history", []),
-                           threads=threads,
-                           current_thread=session.get("thread_id"))
+                           threads=enhanced_threads,
+                           current_thread=current_thread)
 
 @student_bp.route("/switch_thread/<thread_id>")
 def switch_thread(thread_id):

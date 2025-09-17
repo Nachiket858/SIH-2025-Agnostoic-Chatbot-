@@ -1,4 +1,3 @@
-- [x] Modify student.py to handle AJAX POST requests: check if request is JSON, process user_input, invoke chatbot, return JSON with assistant message.
-- [x] Modify templates/student_chat.html: change form onsubmit to use JavaScript, append user message to chat-box, send fetch POST, append assistant message, scroll to bottom.
-- [x] Ensure message HTML structure matches the server-rendered ones.
-- [x] Test the functionality: sending messages without reload, scrolling, switching threads.
+- [x] Modify student.py: Update the generate function in student_chat route to use chatbot.stream with stream_mode="messages" and yield message_chunk.content for real-time streaming.
+- [x] Modify templates/student_chat.html: Update the sendMessage JS function to use fetch with response.body.getReader() to read streaming chunks, decode them, and append to a dynamically created assistant message div.
+- [ ] Test the streaming functionality.
