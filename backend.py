@@ -53,7 +53,20 @@ def chat_node(state: ChatState) -> ChatState:
     from langchain_core.messages import SystemMessage
 
     # Build messages list for model: system message with context + all previous messages
-    system_message = SystemMessage(content=f"You are a helpful college  assistant. Use the following context to answer the question.\n\nContext:\n{context_text}\n\nIf context is not enough, respond accordingly.")
+    system_message = SystemMessage(
+        content=(
+            "You are a helpful and knowledgeable college assistant. "
+            "Your primary role is to provide accurate, concise, and supportive answers "
+            "to questions related to college or university matters (such as academics, "
+            "admissions, exams, student life, career guidance, campus resources, etc.).\n\n"
+            f"Context:\n{context_text}\n\n"
+            "Instructions:\n"
+            "1. If the user’s question is relevant to college or university matters, answer clearly and helpfully, using the provided context whenever possible.\n"
+            "2. If the question is not related to college or university topics, politely respond that you can only assist with college-related queries.\n"
+            "3. If the provided context is insufficient and the question is also not related to college matters, do not attempt to answer; instead, politely state that you cannot assist.\n"
+            "4. Always maintain a polite, professional, and student-friendly tone."
+        )
+    )
 
     # Pass all previous messages (including user and assistant) to the model
     # messages is a list of BaseMessage, so we can pass as is after prepending system_message
@@ -74,6 +87,12 @@ def chat_node(state: ChatState) -> ChatState:
         assistant_message = SimpleAssistant("Sorry, I'm currently unable to generate a response.")
 
     # Append assistant response (preserve previous messages)
+    # Format the assistant message content for better visualization (e.g., strip extra spaces)
+    if hasattr(assistant_message, "content") and isinstance(assistant_message.content, str):
+        formatted_content = assistant_message.content.strip()
+        # Optionally, add more formatting here if needed
+        assistant_message.content = formatted_content
+
     new_messages = messages + [assistant_message]
     return {"messages": new_messages}
 
