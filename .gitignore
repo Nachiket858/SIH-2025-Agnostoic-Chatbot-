@@ -62,6 +62,7 @@ uploads/
 *.pdf
 *.docx
 *.txt
+!requirements.txt
 
 # OS files
 .DS_Store
