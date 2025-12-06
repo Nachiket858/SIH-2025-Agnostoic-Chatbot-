@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -7,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body class="bg-gray-50">
   <header class="bg-indigo-600 text-white">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -14,22 +16,39 @@
         <i class="fas fa-user-shield text-2xl"></i>
         <h1 class="font-bold">Admin Panel</h1>
       </div>
-      <a href="/" class="bg-indigo-700 px-3 py-2 rounded">Home</a>
+      <a href="/logout" class="bg-red-600 hover:bg-red-700 px-3 py-2 rounded">Logout</a>
     </div>
   </header>
 
   <main class="container mx-auto p-6">
     <div class="max-w-2xl bg-white rounded-lg shadow p-6 mx-auto">
-      <h2 class="text-xl font-semibold mb-3"><i class="fas fa-upload text-indigo-500 mr-2"></i> Upload Knowledge Base</h2>
-      <p class="text-sm text-gray-500 mb-4">Upload PDF / DOCX / TXT files to add to the knowledge base used by the chatbot.</p>
+      <h2 class="text-xl font-semibold mb-3"><i class="fas fa-upload text-indigo-500 mr-2"></i> Upload Knowledge Base
+      </h2>
+      <p class="text-sm text-gray-500 mb-4">Upload PDF / DOCX / TXT files to add to the knowledge base used by the
+        chatbot.</p>
 
       <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
-        <input type="file" name="file" accept=".pdf,.docx,.txt"
-               class="block w-full border rounded p-2" required />
-        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded">Upload</button>
+        <input type="file" name="file" accept=".pdf,.docx,.txt" class="block w-full border rounded p-2" required />
+        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Upload</button>
       </form>
 
       <div id="status" class="mt-4 text-sm hidden p-3 rounded"></div>
+    </div>
+
+    <div class="max-w-2xl bg-white rounded-lg shadow p-6 mx-auto mt-6">
+      <h2 class="text-xl font-semibold mb-3"><i class="fas fa-file-alt text-indigo-500 mr-2"></i> Uploaded Documents
+      </h2>
+      {% if files %}
+      <ul class="divide-y divide-gray-200">
+        {% for file in files %}
+        <li class="py-3 flex items-center justify-between">
+          <span class="text-gray-700"><i class="fas fa-file mr-2 text-gray-400"></i> {{ file }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-gray-500 text-sm">No documents uploaded yet.</p>
+      {% endif %}
     </div>
   </main>
 
@@ -49,6 +68,8 @@
         if (json.status === 'success') {
           status.className = 'mt-4 text-sm p-3 rounded bg-green-100 text-green-800';
           status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${json.message}`;
+          // Reload page to show new file in list
+          setTimeout(() => location.reload(), 1500);
         } else {
           status.className = 'mt-4 text-sm p-3 rounded bg-red-100 text-red-800';
           status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>${json.message}`;
@@ -61,4 +82,5 @@
     });
   </script>
 </body>
+
 </html>

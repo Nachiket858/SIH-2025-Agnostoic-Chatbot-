@@ -6,9 +6,14 @@ from utilities import allowed_file, upload_to_qdrant
 
 admin_bp = Blueprint("admin", __name__, template_folder="templates")
 
+from flask_login import login_required, current_user
+
 # Route: GET -> render upload page, POST -> accept file and upload to qdrant
 @admin_bp.route("/admin", methods=["GET", "POST"])
+@login_required
 def admin():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
     # Use current_app config for upload folder
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
     os.makedirs(upload_folder, exist_ok=True)
@@ -36,4 +41,11 @@ def admin():
 
         return jsonify({"status": "success", "message": f"File uploaded successfully with {chunks_count} chunks."})
 
-    return render_template("admin.html")
+    # List existing files
+    files = []
+    try:
+        files = os.listdir(upload_folder)
+    except OSError:
+        pass
+
+    return render_template("admin.html", files=files)

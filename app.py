@@ -1,37 +1,49 @@
-# app.py
 import os
-from flask import Flask, render_template, request, redirect, session
-from admin import admin_bp
-from student import student_bp
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from flask import Flask, render_template, request, redirect, session, url_for
+from flask_login import LoginManager, current_user
+from admin import admin_bp
+from student import student_bp
+from auth import auth_bp
+from db import init_db, get_user_by_id
+
 def create_app():
     app = Flask(__name__, template_folder="templates")
-    app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # move to .env for production
+    app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
+
+    # Initialize DB
+    init_db()
+
+    # Login Manager
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return get_user_by_id(user_id)
 
     # Upload folder
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER", "uploads")
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-    # Register blueprints (they define routes like /admin, /student_chat, /reset_chat, /switch_thread/...)
-    app.register_blueprint(admin_bp)     # admin route: /admin
-    app.register_blueprint(student_bp)   # student routes: /student_chat, /switch_thread/<id>, /reset_chat
+    # Register blueprints
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(student_bp)
+    app.register_blueprint(auth_bp)
 
-    # Index route (role selection)
-    @app.route("/", methods=["GET", "POST"])
+    # Index route
+    @app.route("/")
     def index():
-        if request.method == "POST":
-            role = request.form.get("role")
-            session["role"] = role
-            # initialize thread for students
-            if role == "student":
-                # student blueprint will handle session initialization
-                return redirect("/student_chat")
+        if current_user.is_authenticated:
+            if current_user.role == 'admin':
+                return redirect(url_for('admin.admin'))
             else:
-                return redirect("/admin")
-        return render_template("index.html")
+                return redirect(url_for('student.student_chat'))
+        return redirect(url_for('auth.login'))
 
     return app
 

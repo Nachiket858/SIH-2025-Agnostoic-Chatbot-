@@ -18,13 +18,17 @@ import docx
 # Qdrant Configuration
 # ----------------------------------------------------
 COLLECTION_NAME = "student_docs"
-QDRANT_URL = "https://30379eb1-d7db-44ac-9838-c8b759fae2c6.europe-west3-0.gcp.cloud.qdrant.io"
-QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.pAaS4hvrmqlhnGQmmmpotowiHFPLPBSIaX1rfRTibeI"
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
 # Initialize Qdrant client
 try:
-    qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-    _ = qdrant.get_collections()
+    if not QDRANT_URL or not QDRANT_API_KEY:
+        print("Warning: Qdrant credentials not found in environment variables.")
+        qdrant = None
+    else:
+        qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        _ = qdrant.get_collections()
 except Exception as e:
     print("Warning: Qdrant initialization failed.", e)
     qdrant = None
